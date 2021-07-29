@@ -349,8 +349,8 @@ def migakuRetUndo(self):
     else:
         return ogUndo(mw.col)
 
-ogUndoReview = _Collection._undoReview
-_Collection._undoReview = migakuRetUndoReview
+ogUndoReview = _Collection._undo_review
+_Collection._undo_review = migakuRetUndoReview
 
 ogUndo = _Collection.undo
 _Collection.undo = migakuRetUndo
