@@ -493,32 +493,17 @@ def saveMassRetirementTimestamp(timestamp):
     mw.addonManager.writeConfig(__name__, config)
 
 def setupMenu():
-    addMenu = False
-    if not hasattr(mw, 'RetirementMainMenu'):
-        mw.RetirementMainMenu = QMenu('Retirement',  mw)
-        addMenu = True
-    if not hasattr(mw, 'RetirementMenuSettings'):
-        mw.RetirementMenuSettings = []
-    if not hasattr(mw, 'RetirementMenuActions'):
-        mw.RetirementMenuActions = []
+    subMenu = QMenu('Retirement', mw)
+    mw.form.menuTools.addMenu(subMenu)
 
-    setting = QAction("Retirement Settings", mw)
-    setting.triggered.connect(openSettings)
-    mw.RetirementMenuSettings.append(setting)
-    action = QAction("Run Mass Retirement", mw)
-    action.triggered.connect(testretire)
-    mw.RetirementMenuActions.append(action)
+    retirementSettings= QAction("Retirement Settings", mw)
+    retirementSettings.triggered.connect(openSettings)
+    subMenu.addAction(retirementSettings)
 
-    mw.RetirementMainMenu.clear()
-    for act in mw.RetirementMenuSettings:
-        mw.RetirementMainMenu.addAction(act)
-    mw.RetirementMainMenu.addSeparator()
-    for act in mw.RetirementMenuActions:
-        mw.RetirementMainMenu.addAction(act)
-
-    if addMenu:
-        mw.form.menubar.insertMenu(mw.form.menuHelp.menuAction(), mw.RetirementMainMenu)  
-
+    massRetirement = QAction("Run Mass Retirement", mw)
+    massRetirement.triggered.connect(testretire)
+    subMenu.addAction(massRetirement)
+   
 setupMenu()
 sched.Scheduler.answerCard = wrap(sched.Scheduler.answerCard, checkInterval)
 schedv2.Scheduler.answerCard = wrap(schedv2.Scheduler.answerCard, checkInterval)
