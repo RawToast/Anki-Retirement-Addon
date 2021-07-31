@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
 # 
 from os.path import  join, dirname
-import re
 from anki.hooks import addHook, wrap
 from aqt import mw
 import anki.find
 from aqt.qt import *
 from aqt.utils import tooltip, showInfo
-from aqt.deckconf import DeckConf
 import aqt
-import json
 from anki.utils import ids2str, intTime
 from anki import sched
 from anki import schedv2
@@ -19,7 +16,7 @@ import time
 
 addon_path = dirname(__file__)
 
-verNumber = "2.1.44"
+verNumber = "2.1.45.1"
 
 def getConfig():
     return mw.addonManager.getConfig(__name__)
