@@ -247,7 +247,7 @@ def handleRetirementActions(card, note, notesToDelete, cardsToMove, suspended,ta
     return notesToDelete, cardsToMove, suspended,tagged, total, checkpointed;
 
 def displayNotification(text):
-    showInfo(text ,False,"", "info", "Card Retirement")
+    showInfo(text=text, help="", type="info", title="Card Retirement")
 
 def grabCol():
     return anki.find.Finder(mw.col).findNotes('')
