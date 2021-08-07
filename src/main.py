@@ -323,7 +323,6 @@ def checkInterval(self, card, ease):
   ndl = len(notesToDelete)
   cml = len(cardsToMove)
   if suspended > 0 or tagged > 0 or cml > 0 or ndl > 0:
-    # isinstance(mw.col._undo.entries.peek, mw.col._ReviewsUndo)
     last = len(mw.col._undo.entries) - 1
 
     mw.col._undo.entries[last].retirementActions = []
@@ -345,7 +344,7 @@ def checkInterval(self, card, ease):
 
 def retirementUndoReview(self):
   last = len(mw.col._undo.entries) - 1
-  # last = max(loc for loc, val in enumerate(mw.col._undo.entries) if isinstance(val, LegacyReviewUndo))
+
   if (
       isinstance(mw.col._undo.entries[last], LegacyReviewUndo)
       and hasattr(mw.col._undo.entries[last], "retirementActions")
