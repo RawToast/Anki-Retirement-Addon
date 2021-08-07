@@ -2,7 +2,7 @@
 
 Allow users to suspend, tag, delete, or move cards that reach a specific retirement interval
 
-Supports Anki version 2.1.45
+Supports Anki version 2.1.45+
 
 ### License and Credits
 
