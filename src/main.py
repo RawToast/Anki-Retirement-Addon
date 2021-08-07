@@ -326,7 +326,6 @@ def checkInterval(self, card, ease):
     # isinstance(mw.col._undo.entries.peek, mw.col._ReviewsUndo)
     last = len(mw.col._undo.entries) - 1
 
-
     mw.col._undo.entries[last].retirementActions = []
     if cml > 0:
       mw.col._undo.entries[last].retirementActions.append('move')
@@ -345,24 +344,26 @@ def checkInterval(self, card, ease):
 
 
 def retirementUndoReview(self):
+  last = len(mw.col._undo.entries) - 1
+  # last = max(loc for loc, val in enumerate(mw.col._undo.entries) if isinstance(val, LegacyReviewUndo))
   if (
-      isinstance(mw.col._undo.entries[0], LegacyReviewUndo)
-      and hasattr(mw.col._undo.entries[0], "retirementActions")
-      and len(mw.col._undo.entries[0].retirementActions) > 0
+      isinstance(mw.col._undo.entries[last], LegacyReviewUndo)
+      and hasattr(mw.col._undo.entries[last], "retirementActions")
+      and len(mw.col._undo.entries[last].retirementActions) > 0
   ):
-    data: LegacyReviewUndo = mw.col._undo.entries[0]
-    card: Card = data.card
+    data: LegacyReviewUndo = mw.col._undo.entries[last]
+    card = data.card
     # if not data:
-      # self.clearUndo()
+    # self.clearUndo()
     if not data.was_leech and card.note().hasTag("leech"):
       card.note().delTag("leech")
       card.note().flush()
-    if 'tag' in card.retirementActions:
+    if 'tag' in data.retirementActions:
       card.note().delTag(RetirementTag)
       card.note().flush()
-    if card.retirementActions[0] == 'move':
-      moveToDeck([card.id], card.retirementActions[1])
-    del card.retirementActions
+    if data.retirementActions[0] == 'move':
+      moveToDeck([card.id], data.retirementActions[1])
+    del data.retirementActions
     card.flush()
     last = self.db.scalar(
         "select id from revlog where cid = ? "
@@ -375,14 +376,16 @@ def retirementUndoReview(self):
     type = ("new", "lrn", "rev")[n]
     self.sched._updateStats(card, type, -1)
     self.sched.reps -= 1
-    return card.id
+    return LegacyReviewUndo(card, was_leech=data.was_leech)
   else:
     return ogUndoReview(mw.col)
 
 
 def retirementUndo(self):
-  if isinstance(mw.col._undo.entries[0], LegacyCheckpoint) and mw.col._undo.entries[0].action == "Card Retirement" and len(self._undo.entries) > 2:
-    tempUndo = self._undo.entries[0]
+  last = len(mw.col._undo.entries) - 1
+  if (isinstance(mw.col._undo.entries[last], LegacyCheckpoint)
+          and mw.col._undo.entries[last].action == "Card Retirement" and len(self._undo.entries) > 2):
+    tempUndo = self._undo.entries[last]
     self.rollback()
     self.clearUndo()
     self._undo.entries.insert(0, tempUndo)
@@ -477,8 +480,15 @@ def openSettings():
   bg3b2 = QRadioButton("Off")
   bg3b2.setFixedWidth(100)
   applyb = QPushButton('Apply')
-  applyb.clicked.connect(lambda: saveConfig(retirementMenu, rdn.text(), rt.text(
-  ), bg1b1.isChecked(), bg1b2.isChecked(), bg2b1.isChecked(), bg3b1.isChecked()))
+  applyb.clicked.connect(
+      lambda: saveConfig(
+          retirementMenu,
+          rdn.text(),
+          rt.text(),
+          bg1b1.isChecked(),
+          bg1b2.isChecked(),
+          bg2b1.isChecked(),
+          bg3b1.isChecked()))
   applyb.setFixedWidth(100)
   cancelb = QPushButton('Cancel')
   cancelb.clicked.connect(lambda: retirementMenu.hide())
