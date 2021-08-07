@@ -156,7 +156,7 @@ def loadRetirement(self):
 
 def raSet(ra):
   for a in ra:
-    if ra[a] == True:
+    if ra[a]:
       return True
   return False
 
@@ -238,7 +238,16 @@ def setCheckpointed(checkpointed, review):
   return True
 
 
-def handleRetirementActions(card, note, notesToDelete, cardsToMove, suspended, tagged, total, checkpointed, review=False):
+def handleRetirementActions(
+        card,
+        note,
+        notesToDelete,
+        cardsToMove,
+        suspended,
+        tagged,
+        total,
+        checkpointed,
+        review=False):
   conf = mw.col.decks.confForDid(card.odid or card.did)['new']
   if 'retirementActions' in conf and 'retiringInterval' in conf:
     if conf['retiringInterval'] > 0 and raSet(conf['retirementActions']):
@@ -398,8 +407,13 @@ def saveConfig(wid, rdn, rt, retroR, dailyR, realN, retroN):
     retroN = 'on'
   else:
     retroN = 'off'
-  conf = {"Retirement Deck Name": rdn, "Retirement Tag": rt, "Mass Retirement on Startup": retroR,
-          "Real-time Notifications": realN, "Mass Retirement Notifications": retroN, "Last Mass Retirement": mw.LastMassRetirement}
+  conf = {
+      "Retirement Deck Name": rdn,
+      "Retirement Tag": rt,
+      "Mass Retirement on Startup": retroR,
+      "Real-time Notifications": realN,
+      "Mass Retirement Notifications": retroN,
+      "Last Mass Retirement": mw.LastMassRetirement}
   mw.addonManager.writeConfig(__name__, conf)
   refreshConfig()
   wid.hide()
