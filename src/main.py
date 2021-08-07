@@ -5,18 +5,19 @@ from anki.hooks import addHook, wrap
 from aqt import mw
 import anki.find
 from aqt.qt import *
+from anki.cards import Card
 from aqt.utils import tooltip, showInfo
 import aqt
 from anki.utils import ids2str, intTime
 from anki import sched
 from anki import schedv2
-from anki.collection import _Collection
+from anki.collection import _Collection, LegacyReviewUndo, LegacyCheckpoint
 import copy
 import time
 
 addon_path = dirname(__file__)
 
-verNumber = "2.1.45.2"
+verNumber = "2.1.45.3"
 
 
 def getConfig():
@@ -322,11 +323,12 @@ def checkInterval(self, card, ease):
   ndl = len(notesToDelete)
   cml = len(cardsToMove)
   if suspended > 0 or tagged > 0 or cml > 0 or ndl > 0:
-    last = len(mw.col._undo[2]) - 1
-    mw.col._undo[2][last].retirementActions = []
+    last = len(mw.col._undo.entries) - 1
+
+    mw.col._undo.entries[last].retirementActions = []
     if cml > 0:
-      mw.col._undo[2][last].retirementActions.append('move')
-      mw.col._undo[2][last].retirementActions.append(card.did)
+      mw.col._undo.entries[last].retirementActions.append('move')
+      mw.col._undo.entries[last].retirementActions.append(card.did)
       moveToDeck(cardsToMove)
       mw.col.db.commit()
     if ndl > 0:
@@ -335,51 +337,57 @@ def checkInterval(self, card, ease):
       mw.col._undo.append(undoCopy)
       mw.col.remNotes(notesToDelete)
     if tagged > 0:
-      mw.col._undo[2][last].retirementActions.append('tag')
+      mw.col._undo.entries[last].retirementActions.append('tag')
     if(RealNotifications):
       tooltip('The card has been retired.')
 
 
 def retirementUndoReview(self):
-  lastAdded = len(mw.col._undo[2]) - 1
-  if hasattr(self._undo[2][lastAdded], 'retirementActions') and len(self._undo[2][lastAdded].retirementActions) > 0:
-    data = self._undo[2]
-    wasLeech = self._undo[3]
-    c = data.pop()
-    if not data:
-      self.clearUndo()
-    if not wasLeech and c.note().hasTag("leech"):
-      c.note().delTag("leech")
-      c.note().flush()
-    if 'tag' in c.retirementActions:
-      c.note().delTag(RetirementTag)
-      c.note().flush()
-    if c.retirementActions[0] == 'move':
-      moveToDeck([c.id], c.retirementActions[1])
-    del c.retirementActions
-    c.flush()
+  last = len(mw.col._undo.entries) - 1
+
+  if (
+      isinstance(mw.col._undo.entries[last], LegacyReviewUndo)
+      and hasattr(mw.col._undo.entries[last], "retirementActions")
+      and len(mw.col._undo.entries[last].retirementActions) > 0
+  ):
+    data: LegacyReviewUndo = mw.col._undo.entries[last]
+    card = data.card
+    # if not data:
+    # self.clearUndo()
+    if not data.was_leech and card.note().hasTag("leech"):
+      card.note().delTag("leech")
+      card.note().flush()
+    if 'tag' in data.retirementActions:
+      card.note().delTag(RetirementTag)
+      card.note().flush()
+    if data.retirementActions[0] == 'move':
+      moveToDeck([card.id], data.retirementActions[1])
+    del data.retirementActions
+    card.flush()
     last = self.db.scalar(
         "select id from revlog where cid = ? "
-        "order by id desc limit 1", c.id)
+        "order by id desc limit 1", card.id)
     self.db.execute("delete from revlog where id = ?", last)
     self.db.execute(
         "update cards set queue=type,mod=?,usn=? where queue=-2 and nid=?",
-        intTime(), self.usn(), c.nid)
-    n = 1 if c.queue == 3 else c.queue
+        intTime(), self.usn(), card.nid)
+    n = 1 if card.queue == 3 else card.queue
     type = ("new", "lrn", "rev")[n]
-    self.sched._updateStats(c, type, -1)
+    self.sched._updateStats(card, type, -1)
     self.sched.reps -= 1
-    return c.id
+    return LegacyReviewUndo(card, was_leech=data.was_leech)
   else:
     return ogUndoReview(mw.col)
 
 
 def retirementUndo(self):
-
-  if self._undo[0] != 1 and self._undo[1] == "Card Retirement" and len(self._undo) > 2:
-    tempUndo = self._undo[2]
-    self._undoOp()
-    self._undo = tempUndo
+  last = len(mw.col._undo.entries) - 1
+  if (isinstance(mw.col._undo.entries[last], LegacyCheckpoint)
+          and mw.col._undo.entries[last].action == "Card Retirement" and len(self._undo.entries) > 2):
+    tempUndo = self._undo.entries[last]
+    self.rollback()
+    self.clearUndo()
+    self._undo.entries.insert(0, tempUndo)
     self.undo()
   else:
     return ogUndo(mw.col)
@@ -471,8 +479,15 @@ def openSettings():
   bg3b2 = QRadioButton("Off")
   bg3b2.setFixedWidth(100)
   applyb = QPushButton('Apply')
-  applyb.clicked.connect(lambda: saveConfig(retirementMenu, rdn.text(), rt.text(
-  ), bg1b1.isChecked(), bg1b2.isChecked(), bg2b1.isChecked(), bg3b1.isChecked()))
+  applyb.clicked.connect(
+      lambda: saveConfig(
+          retirementMenu,
+          rdn.text(),
+          rt.text(),
+          bg1b1.isChecked(),
+          bg1b2.isChecked(),
+          bg2b1.isChecked(),
+          bg3b1.isChecked()))
   applyb.setFixedWidth(100)
   cancelb = QPushButton('Cancel')
   cancelb.clicked.connect(lambda: retirementMenu.hide())
