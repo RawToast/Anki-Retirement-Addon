@@ -1,7 +1,9 @@
 # Anki Retirement Addon 
 
-Allow users to suspend, tag, delete, or move cards that reach a specific retirement interval
+This plugin is not maintained. I would not recommend using it. 
 
+Allow users to suspend, tag, delete, or move cards that reach a specific retirement interval
+ 
 Supports Anki version 2.1.45+
 
 ### License and Credits
